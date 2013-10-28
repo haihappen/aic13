@@ -10,3 +10,6 @@ Installation & Deployment Instructions:
 * MobileWorks
 ** needs Python 2.7, doesn't work with 3.x
 ** installation guide for windows see => http://www.manuelmertl.com/mobileworks-python-windows/
+
+* Scraper
+** needs feedparser https://pypi.python.org/pypi/feedparser
