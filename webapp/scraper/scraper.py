@@ -10,10 +10,6 @@ class Task:
     
     def get_text(self):
         return self.__text
-    
-    def get_keywords(self):
-        return self.__keywords
-
 
 class AicHTMLParser(HTMLParser):
     
