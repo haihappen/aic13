@@ -1,0 +1,15 @@
+<title>AIC13: Sentiment Analysis</title>
+
+{% block content %}
+    {% if messages %}
+    <div>
+        {% for message in messages %}
+            <h2 class="{{message.tag}}">{{ message.message }}</h2>
+        {% endfor %}
+    </div>
+    {% endif %}
+{% endblock %}
+
+<h1>Available Functions</h1>
+
+<a href="/company/new/">New Company</a>

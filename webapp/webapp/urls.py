@@ -5,9 +5,11 @@ from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = patterns('',
-    # Examples:
-    url(r'^sentiments$', 'REST.views.sentiments', name='sentiments'),
-    url(r'^add_company/(?P<company_name>\w+)$', 'REST.views.add_company'),
+    url(r'^$', 'REST.views.index'),
+    
+    url(r'^sentiments/$', 'REST.views.sentiments', name='sentiments'),
+    url(r'^company/$', 'REST.views.company'),
+    url(r'^company/new/$', 'REST.views.new_company'),
     # url(r'^webapp/', include('webapp.foo.urls')),
 
     # Uncomment the admin/doc line below to enable admin documentation:
