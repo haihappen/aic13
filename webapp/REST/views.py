@@ -26,6 +26,7 @@ def company(request):
         name = request.POST.get('name','')
         company_instance = Company.objects.create(name=name)
         company_instance.save()
+        #Upload tasks for this company
         messages.success( request, 'Sucessfully created company' )
         return HttpResponseRedirect('/')
     
@@ -33,3 +34,13 @@ def new_company(request):
     if request.method == 'GET':
         return render_to_response('company/new.html', context_instance=RequestContext(request))
     
+def parse_yahoo(request):
+    #activate parser
+    messages.success( request, 'Sucessfully parsed Yahoo!' )
+    return render_to_response('index.html', context_instance=RequestContext(request))
+
+def upload_tasks(request):
+    #upload tasks to MobileWorks
+    messages.success( request, 'Sucessfully uploaded Tasks' )
+    return render_to_response('index.html', context_instance=RequestContext(request))
+
