@@ -48,7 +48,7 @@ class AicHTMLParser(HTMLParser):
             if tag == "div":
                 self.__div -= 1
                 if self.__div == 0:
-                    self.__scrap = 0
+                    self.__scrap = False
             elif tag == "p":
                 if self.__tmp != None and not self.__tmp.isspace():
                     self.__paragraphs.append(self.__tmp.strip())    
