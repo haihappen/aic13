@@ -46,13 +46,14 @@ def createTaskNTimes(_instructions, _text, _n):
 	return tasks
 	
 #returns the project
-def getProjectByID(id):
+def getProjectByID(_id):
 	return mw.Project.retrieve("https://sandbox.mobileworks.com/api/v2/project/" + _id + "/")
 
 #returns the task
-def getTaskByID(id):
+def getTaskByID(_id):
 	return mw.Task.retrieve("https://sandbox.mobileworks.com/api/v2/task/" + _id + "/")
 
+	
 #---scrap---
 #auth()
 #t1 = createTask("a or b", "take a")
