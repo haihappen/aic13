@@ -29,4 +29,4 @@ p.add_task(t1)
 #publishing the project and all included tasks and retrieving the project url
 project_url = p.post()
 
-print project_url
+print t1.post()
