@@ -10,9 +10,11 @@ def auth():
 	mw.password = 'aic13' 
 		
 #creates a project and returns the project url
-def createProject(_tasks):
+def createProject(_tasks, _hookUrl):
 	#the project for this exercise
 	p = mw.Project()
+	#setting the webhook, called after all tasks are finished
+	p.set_params(webhooks = _hookUrl)
 	
 	#adding the tasks to the project
 	for task in _tasks:
