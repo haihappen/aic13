@@ -1,5 +1,6 @@
 #User Management part of this file completly taken from: https://github.com/Horrendus/csrf_thesis/tree/master/django_forgebook
 import json
+import urllib2
 
 from models import Task, Answer
 
@@ -85,10 +86,17 @@ def answer_task(request, task_id):
                 #Open Question, we can't decide if answer is correct
                 correct = True
             if correct:
-                #TODO: if this is the last wanted answer, send a POST request to the callback URL
                 answer_instance = Answer.objects.create(task=task,user=request.user,answer=answer)
                 answer_instance.save()
                 messages.success(request, "Thanks for answering a Question!")
+                if len(existing_answers)+1 == task.answers_wanted:
+                    print "last answer, sending callback"
+                    serializer = JSONSerializer()
+                    header = {'Content-type': 'application/json'}
+                    data = serializer.serialize(Answer.objects.filter(task=task))
+                    req = urllib2.Request(task.callback,data,header)
+                    resp = urllib2.urlopen(req)
+                    print resp.read()
                 return HttpResponseRedirect('/')
             else:
                 messages.info(request, 'Incorrect Answer, try again')
