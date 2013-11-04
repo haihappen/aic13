@@ -7,3 +7,8 @@ class Company(models.Model):
 class SentimentAnalysis(models.Model):
     company = models.CharField(max_length=30)
     sentiment = models.IntegerField()
+
+class Paragraph(models.Model):
+    pub_date = models.DateTimeField()
+    yahoo_id = models.CharField(max_length=256)
+    text = models.CharField(max_length=256)

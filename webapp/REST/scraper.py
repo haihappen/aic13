@@ -1,15 +1,12 @@
-import feedparser
-import time
+from feedparser import parse
+from time import time
 from threading import Thread
 from collections import deque
 from HTMLParser import HTMLParser
-
-class Task:
-    def __init__(self, text):
-        self.__text = text
-    
-    def get_text(self):
-        return self.__text
+from models import Paragraph
+from datetime import datetime
+from time import mktime
+from django.utils.timezone import utc
 
 class AicHTMLParser(HTMLParser):
     
@@ -23,7 +20,7 @@ class AicHTMLParser(HTMLParser):
     def handle_starttag(self, tag, attrs):
         if not self.__scrap:
             for a in attrs:
-                if "id" == a[0] and a[1] == "mediaarticlebody":
+                if "id" == a[0] and (a[1] == "mediaarticlebody" or a[1] == "mediablogbody"):
                     self.__scrap = True
                     break  
         if self.__scrap:
@@ -39,7 +36,7 @@ class AicHTMLParser(HTMLParser):
         if self.__tmp != None:
             self.__tmp += data
         
-    def handle_endtag(self, tag):
+    def handle_endtag(self, tag):   
         if self.__scrap:
             if tag == "div":
                 self.__div -= 1
@@ -54,46 +51,34 @@ class AicHTMLParser(HTMLParser):
         return self.__paragraphs
 
 
-class Scraper(Thread):
+class Scraper:
 
-    def __init__(self, tasks, link):
-        Thread.__init__(self)
+    def __init__(self, tasks, link, published, yahoo_id):
         self.__tasks = tasks
         self.__link = link
+        self.__published = datetime.fromtimestamp(mktime(published)).replace(tzinfo=utc)
+        self.__yahoo_id = yahoo_id
      
     def run(self):
-        article = feedparser.parse(self.__link)
+        article = parse(self.__link)
         parser = AicHTMLParser()
         parser.feed(article["feed"]["summary"])
         for p in parser.get_paragraphs():
-            self.__tasks.append(Task(p))
-            
+            self.__tasks.append(Paragraph.objects.create(pub_date=self.__published, yahoo_id = self.__yahoo_id,text=p))
+        if not self.__tasks:
+            raise Exception("Could not scrap data from link: %s"%self.__link)
         
-def create_tasks():
+def scrap_yahoo():
     threads = []
-    tasks = deque()
-    rss = feedparser.parse("http://finance.yahoo.com/news/?format=rss")  # TODO: use more RSS links
+    paragraphs = []
+    rss = parse("http://finance.yahoo.com/news/?format=rss")  # TODO: use more RSS links
     for entry in rss.entries:
-        t = Scraper(tasks, entry["link"])
-        t.start()
-        threads.append(t)
-        if len(threads) >= 5:
-            for t in threads:
-                t.join()
-            threads = []
-    for t in threads:
-        t.join()
-    return tasks
+        yahoo_id = entry["id"]
+        p = Paragraph.objects.filter(yahoo_id__exact=yahoo_id)
+        if p:
+            continue
+        print("Scrap article from: %s" % entry["link"])
+        t = Scraper(paragraphs, entry["link"], entry["published_parsed"],yahoo_id)
+        t.run()
+    return paragraphs
 
-
-def main():
-    tasks = create_tasks()
-    for t in tasks:
-        if t.get_text():
-            print("task: " + t.get_text())
-
-if __name__ == "__main__":
-    start = time.time()
-    main()
-    print("time needed: %f" % (time.time() - start))
-    
