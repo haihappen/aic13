@@ -85,7 +85,7 @@ def answer_task(request, task_id):
                 #Open Question, we can't decide if answer is correct
                 correct = True
             if correct:
-                #TODO: Check if the user is allowed to answer this task
+                #TODO: if this is the last wanted answer, send a POST request to the callback URL
                 answer_instance = Answer.objects.create(task=task,user=request.user,answer=answer)
                 answer_instance.save()
                 messages.success(request, "Thanks for answering a Question!")
