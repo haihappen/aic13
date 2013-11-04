@@ -1,0 +1,34 @@
+<title>AIC13 Crowdsourcing Plattform</title>
+
+<h1>Listing Tasks</h1>
+{% if user.is_authenticated %}
+  <p>Welcome, {{ user.username }}</a>. Thanks for logging in. <a href="/logout">Logout.</a></p>
+  
+	{% block content %}
+    	{% if messages %}
+    	<div>
+        	{% for message in messages %}
+            	<h2 class="{{message.tag}}">{{ message.message }}</h2>
+        	{% endfor %}
+    	</div>
+    	{% endif %}
+	{% endblock %}
+	<table>
+  		<tr>
+    		<th>Title</th>
+    		<th>Content</th>
+    		<th>Answer</th>
+  		</tr>
+ 
+  		{% for task in all_tasks %}
+  		<tr>
+    		<td>{{task.title}}</td>
+    		<td>{{task.content}}</td>
+    		<td><a href="/tasks/{{ task.id }}/">Answer</a></td>
+  		</tr>
+  		{% endfor %}
+	</table>
+	<br />
+{% else %}
+	<p>Please <a href="/signup/">signup</a> or <a href="/login/">login</a> to see and answer Tasks.</p>
+{% endif %}
