@@ -42,7 +42,11 @@ def tasks(request):
             tasks = Task.objects.none()
         else:
             answers = Answer.objects.filter(user=request.user)
-            tasks = Task.objects.exclude(id__in=[a.task.id for a in answers])
+            all_tasks = Task.objects.exclude(id__in=[a.task.id for a in answers])
+            tasks = []
+            for t in all_tasks:
+                if not Answer.objects.filter(task=t).count() >= t.answers_wanted:
+                    tasks += [t]
         return render_to_response('web/index.html', {'all_tasks': tasks}, context_instance=RequestContext(request))
 
 @login_required
@@ -62,6 +66,9 @@ def answer_task(request, task_id):
             jsonDec = json.decoder.JSONDecoder()
             possible_answers = jsonDec.decode(task.possible_answers)
             existing_answers = Answer.objects.filter(task=task)
+            if len(existing_answers) >= task.answers_wanted:
+                messages.info(request, 'No more answers allowed for this task, please pick another one')
+                return HttpResponseRedirect('/')
             for existing_answer in existing_answers:
                 if existing_answer.user == request.user:
                     print "User already answered once, not allowed to do it twice"
@@ -123,7 +130,6 @@ def sessions(request):
 
 def destroy_session(request):
     auth.logout(request)
-    messages.success( request, 'Sucessfully logged out' )
     return HttpResponseRedirect("/")
 
 def update_user(request):
