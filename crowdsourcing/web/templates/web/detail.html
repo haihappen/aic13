@@ -1,0 +1,39 @@
+{% if messages %}
+	<div>
+    	{% for message in messages %}
+        	<h2 class="{{message.tag}}">{{ message.message }}</h2>
+        {% endfor %}
+    </div>
+{% endif %}
+
+<h1>{{task.title}}</h1>
+<h2>{{task.content}}</h2>
+<p>Price for answering this Task: {{task.price}} €</p>
+
+<p>
+{% for answer in possible_answers %}
+{{answer}}</br>
+{% endfor %}
+
+<form action="/answer_task/{{task.id}}/" method="post">
+{% csrf_token %}
+<table>
+		<tr>
+			<td colspan="2" style="text-align:"><h2>Your Answer:</h2></td>
+		</tr>
+		<tr>
+			<td>
+				<textarea name="answer">
+				</textarea>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="2" style="text-align: right;">
+				<br/>
+				<input type="submit" value="Submit Answer" style="margin-top: 10px;"/>
+			</td>
+		</tr>
+	</table>
+</form>
+
+<a href="/">All Tasks</a>

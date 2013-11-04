@@ -1,0 +1,1 @@
+{"title":"POST Question!","content":"yay this is a content","possible_answers":["a","b","c","d"],"price":23.42,"callback":"http://foo.at/task","answers_wanted":5}
