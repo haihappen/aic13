@@ -15,6 +15,12 @@ urlpatterns = patterns('',
     # Uncomment the next line to enable the admin:
     url(r'^admin/', include(admin.site.urls)),
     
+    #API related
+    url(r'api/add_task/$', 'web.views.add_task'),
+    url(r'api/answers/$', 'web.views.answers'),
+    
+    
+    #Web interface related
     url(r'^$', 'web.views.tasks'),
     url(r'^tasks/$', 'web.views.tasks'),
     url(r'^tasks/(?P<task_id>\d+)/$', 'web.views.task_detail'),
