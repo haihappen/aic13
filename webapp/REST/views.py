@@ -14,6 +14,8 @@ from scraper import scrap_yahoo
 from JSONSerializer import JSONSerializer
 from reportlab.platypus.para import Para
 
+import urllib2
+
 def sentiments(request):
     if request.method == 'GET':
         serializer = JSONSerializer()
@@ -54,7 +56,13 @@ def parse_yahoo(request):
     return render_to_response('index.html', context_instance=RequestContext(request))
 
 def upload_tasks(request):
-    #upload tasks to MobileWorks
+    #upload tasks to our Crowdsourcing platform
+    url = "http://localhost:8000"
+    header = {'Content-type': 'application/json'}
+    data = '{"title":"Test Question from python!","content":"yay this is a content","possible_answers":["a","b","c","d"],"price":23.42,"callback":"http://foo.at/task","answers_wanted":5}'
+    req = urllib2.Request(url,data,header)
+    response = urllib2.urlopen(req)
+    str = response.read()
     messages.success( request, 'Sucessfully uploaded Tasks' )
     return render_to_response('index.html', context_instance=RequestContext(request))
 
