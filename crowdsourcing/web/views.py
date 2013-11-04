@@ -38,15 +38,18 @@ def answers(request):
 #Webinterface functions
 def tasks(request):
     if request.method == 'GET':
-        all_tasks = Task.objects.all()
-        return render_to_response('web/index.html', {'all_tasks': all_tasks}, context_instance=RequestContext(request))
+        if str(request.user) == "AnonymousUser":
+            tasks = Task.objects.none()
+        else:
+            answers = Answer.objects.filter(user=request.user)
+            tasks = Task.objects.exclude(id__in=[a.task.id for a in answers])
+        return render_to_response('web/index.html', {'all_tasks': tasks}, context_instance=RequestContext(request))
 
 @login_required
 def task_detail(request, task_id):
     if request.method == 'GET':
         task = get_object_or_404(Task, pk=task_id)
-        jsonDec = json.decoder.JSONDecoder()
-        possible_answers = json.loads(task.possible_answers)#jsonDec.decode(task.possible_answers)
+        possible_answers = json.loads(task.possible_answers)
         return render_to_response('web/detail.html', {'task': task, 'possible_answers': possible_answers}, context_instance=RequestContext(request))
 
 @login_required
@@ -58,8 +61,12 @@ def answer_task(request, task_id):
             task = Task.objects.get(id=task_id)
             jsonDec = json.decoder.JSONDecoder()
             possible_answers = jsonDec.decode(task.possible_answers)
-            print "Your Answer: %s" % answer
-            print "Possible Answers: %s" % possible_answers
+            existing_answers = Answer.objects.filter(task=task)
+            for existing_answer in existing_answers:
+                if existing_answer.user == request.user:
+                    print "User already answered once, not allowed to do it twice"
+                    messages.info(request, 'Already answered this question, you can\'t answer it again')
+                    return HttpResponseRedirect('/')
             correct = False
             if len(possible_answers) > 1:
                 if answer in possible_answers:
