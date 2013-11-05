@@ -10,5 +10,5 @@ class SentimentAnalysis(models.Model):
 
 class Paragraph(models.Model):
     pub_date = models.DateTimeField()
-    yahoo_id = models.CharField(max_length=256)
-    text = models.CharField(max_length=256)
+    yahoo_id = models.TextField()
+    text = models.TextField()
