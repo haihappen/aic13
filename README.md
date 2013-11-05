@@ -1,15 +1,15 @@
-Advanced Internet Computing WS13
+AIC WS13 - Task 2 - Sentiment Analysis
+======================================
 
 Installation & Deployment Instructions:
+---------------------------------------
 
-* REST Service & Webapplication:
-** needs Django 1.5
-** run manage.py syncdb
-** run manage.py runserver (DefaultURL: http://localhost:8000/)
+### REST Services & Webapplications:
+* need Django 1.5 & Python 2.7
+* run manage.py syncdb
+* Sentiment Analysis App: run manage.py runserver 8001
+* Crowdsourcing      App: run manage.py runserver
 
-* MobileWorks
-** needs Python 2.7, doesn't work with 3.x
-** installation guide for windows see => http://www.manuelmertl.com/mobileworks-python-windows/
 
-* Scraper
-** needs feedparser https://pypi.python.org/pypi/feedparser
+### Scraper
+* needs feedparser https://pypi.python.org/pypi/feedparser
