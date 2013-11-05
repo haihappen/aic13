@@ -53,32 +53,43 @@ class AicHTMLParser(HTMLParser):
 
 class Scraper:
 
-    def __init__(self, tasks, link, published, yahoo_id):
+    def __init__(self, tasks, entry):
         self.__tasks = tasks
-        self.__link = link
-        self.__published = datetime.fromtimestamp(mktime(published)).replace(tzinfo=utc)
-        self.__yahoo_id = yahoo_id
+        self.__link = entry["link"]
+        self.__published = datetime.fromtimestamp(mktime(entry["published_parsed"])).replace(tzinfo=utc)
+        self.__yahoo_id = entry["id"]
+        self.__entry = entry
      
     def run(self):
+        print("Scrap article: %s - %s" % (self.__entry["title"], self.__link))
         article = parse(self.__link)
         parser = AicHTMLParser()
         parser.feed(article["feed"]["summary"])
         for p in parser.get_paragraphs():
-            self.__tasks.append(Paragraph.objects.create(pub_date=self.__published, yahoo_id = self.__yahoo_id,text=p))
+            self.__tasks.append(Paragraph.objects.create(pub_date=self.__published, yahoo_id=self.__yahoo_id, text=p))
         if not self.__tasks:
-            raise Exception("Could not scrap data from link: %s"%self.__link)
+            raise Exception("Could not scrap data from link: %s" % self.__link)
         
-def scrap_yahoo():
+def scrap_yahoo(latest):
     threads = []
     paragraphs = []
     rss = parse("http://finance.yahoo.com/news/?format=rss")  # TODO: use more RSS links
+    
     for entry in rss.entries:
-        yahoo_id = entry["id"]
-        p = Paragraph.objects.filter(yahoo_id__exact=yahoo_id)
-        if p:
-            continue
-        print("Scrap article from: %s" % entry["link"])
-        t = Scraper(paragraphs, entry["link"], entry["published_parsed"],yahoo_id)
-        t.run()
+        if latest != None:
+            if datetime.fromtimestamp(mktime(entry["published_parsed"])).replace(tzinfo=utc) > latest.pub_date:
+                p = Paragraph.objects.filter(yahoo_id__exact=entry["id"])
+                if p:
+                    continue
+                t = Scraper(paragraphs, entry)
+                t.run()
+        else:
+            t = Scraper(paragraphs, entry)
+            t.run()
+            
     return paragraphs
 
+def create_tasks(keyword):
+    paragraphs = Paragraph.objects.filter(text__contains=keyword)
+    return paragraphs
+    

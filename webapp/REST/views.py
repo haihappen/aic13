@@ -10,6 +10,7 @@ from django.contrib import messages
 from django.core.exceptions import ObjectDoesNotExist
 
 from scraper import scrap_yahoo
+from scraper import create_tasks
 
 from JSONSerializer import JSONSerializer
 from reportlab.platypus.para import Para
@@ -43,7 +44,12 @@ def new_company(request):
 def parse_yahoo(request):
     #activate parser
     #Paragraph.objects.all().delete()
-    paragraphs = scrap_yahoo()        
+    try:
+        latest = Paragraph.objects.latest("pub_date")
+    except ObjectDoesNotExist:
+        latest = None
+    
+    paragraphs = scrap_yahoo(latest)        
     
     for p in paragraphs:
         p.save()
@@ -51,6 +57,11 @@ def parse_yahoo(request):
     
     all_p = Paragraph.objects.all()
     print("nr of paragraphs in db: %d" % len(all_p))
+    
+#     for x in create_tasks("apple"):
+#         print("-----------")
+#         print(x.text)
+#         print(x.yahoo_id)
     return render_to_response('index.html', context_instance=RequestContext(request))
 
 def upload_tasks(request):
