@@ -1,5 +1,6 @@
 #User Management part of this file completly taken from: https://github.com/Horrendus/csrf_thesis/tree/master/django_forgebook
 import json
+import urllib2
 
 from models import Task, Answer
 
@@ -38,15 +39,22 @@ def answers(request):
 #Webinterface functions
 def tasks(request):
     if request.method == 'GET':
-        all_tasks = Task.objects.all()
-        return render_to_response('web/index.html', {'all_tasks': all_tasks}, context_instance=RequestContext(request))
+        if str(request.user) == "AnonymousUser":
+            tasks = Task.objects.none()
+        else:
+            answers = Answer.objects.filter(user=request.user)
+            all_tasks = Task.objects.exclude(id__in=[a.task.id for a in answers])
+            tasks = []
+            for t in all_tasks:
+                if not Answer.objects.filter(task=t).count() >= t.answers_wanted:
+                    tasks += [t]
+        return render_to_response('web/index.html', {'all_tasks': tasks}, context_instance=RequestContext(request))
 
 @login_required
 def task_detail(request, task_id):
     if request.method == 'GET':
         task = get_object_or_404(Task, pk=task_id)
-        jsonDec = json.decoder.JSONDecoder()
-        possible_answers = json.loads(task.possible_answers)#jsonDec.decode(task.possible_answers)
+        possible_answers = json.loads(task.possible_answers)
         return render_to_response('web/detail.html', {'task': task, 'possible_answers': possible_answers}, context_instance=RequestContext(request))
 
 @login_required
@@ -58,8 +66,15 @@ def answer_task(request, task_id):
             task = Task.objects.get(id=task_id)
             jsonDec = json.decoder.JSONDecoder()
             possible_answers = jsonDec.decode(task.possible_answers)
-            print "Your Answer: %s" % answer
-            print "Possible Answers: %s" % possible_answers
+            existing_answers = Answer.objects.filter(task=task)
+            if len(existing_answers) >= task.answers_wanted:
+                messages.info(request, 'No more answers allowed for this task, please pick another one')
+                return HttpResponseRedirect('/')
+            for existing_answer in existing_answers:
+                if existing_answer.user == request.user:
+                    print "User already answered once, not allowed to do it twice"
+                    messages.info(request, 'Already answered this question, you can\'t answer it again')
+                    return HttpResponseRedirect('/')
             correct = False
             if len(possible_answers) > 1:
                 if answer in possible_answers:
@@ -71,10 +86,17 @@ def answer_task(request, task_id):
                 #Open Question, we can't decide if answer is correct
                 correct = True
             if correct:
-                #TODO: Check if the user is allowed to answer this task
                 answer_instance = Answer.objects.create(task=task,user=request.user,answer=answer)
                 answer_instance.save()
                 messages.success(request, "Thanks for answering a Question!")
+                if len(existing_answers)+1 == task.answers_wanted:
+                    print "last answer, sending callback"
+                    serializer = JSONSerializer()
+                    header = {'Content-type': 'application/json'}
+                    data = serializer.serialize(Answer.objects.filter(task=task))
+                    req = urllib2.Request(task.callback,data,header)
+                    resp = urllib2.urlopen(req)
+                    print resp.read()
                 return HttpResponseRedirect('/')
             else:
                 messages.info(request, 'Incorrect Answer, try again')
@@ -116,7 +138,6 @@ def sessions(request):
 
 def destroy_session(request):
     auth.logout(request)
-    messages.success( request, 'Sucessfully logged out' )
     return HttpResponseRedirect("/")
 
 def update_user(request):
