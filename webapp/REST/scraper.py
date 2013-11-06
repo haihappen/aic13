@@ -89,7 +89,10 @@ def scrap_yahoo(latest):
             
     return paragraphs
 
-def create_tasks(keyword):
-    paragraphs = Paragraph.objects.filter(text__contains=keyword)
+def create_tasks(keyword, timestamp):
+    if timestamp != None:
+        paragraphs = Paragraph.objects.filter(text__contains=keyword, pub_date__gt=timestamp)
+    else:
+        paragraphs = Paragraph.objects.filter(text__contains=keyword) 
     return paragraphs
     

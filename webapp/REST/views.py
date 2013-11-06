@@ -31,12 +31,12 @@ def company(request):
         serializer = JSONSerializer()
         data = serializer.serialize(Company.objects.all())
         return HttpResponse(data, content_type="application/json")
-    else: #POST Request
-        name = request.POST.get('name','')
+    else:  # POST Request
+        name = request.POST.get('name', '')
         company_instance = Company.objects.create(name=name)
         company_instance.save()
-        #Upload tasks for this company
-        messages.success( request, 'Sucessfully created company' )
+        # Upload tasks for this company
+        messages.success(request, 'Sucessfully created company')
         return HttpResponseRedirect('/')
     
 def new_company(request):
@@ -44,8 +44,8 @@ def new_company(request):
         return render_to_response('company/new.html', context_instance=RequestContext(request))
     
 def parse_yahoo(request):
-    #activate parser
-    #Paragraph.objects.all().delete()
+    # activate parser
+    # Paragraph.objects.all().delete()
     try:
         latest = Paragraph.objects.latest("pub_date")
     except ObjectDoesNotExist:
@@ -55,25 +55,29 @@ def parse_yahoo(request):
     
     for p in paragraphs:
         p.save()
-    messages.success( request, 'Sucessfully parsed Yahoo!' )
+    messages.success(request, 'Sucessfully parsed Yahoo!')
     
-    all_p = Paragraph.objects.all()
-    print("nr of paragraphs in db: %d" % len(all_p))
+    count = Paragraph.objects.count()
+    print("nr of paragraphs in db: %d" % count)
     
-#     for x in create_tasks("apple"):
-#         print("-----------")
-#         print(x.text)
-#         print(x.yahoo_id)
+
+    for x in create_tasks("apple", None):
+        print("-----------")
+        print(x.text)
+        print(x.yahoo_id)    
+        print(x.pub_date)
+
+
     return render_to_response('index.html', context_instance=RequestContext(request))
 
 def upload_tasks(request):
-    #upload tasks to our Crowdsourcing platform
+    # upload tasks to our Crowdsourcing platform
     url = "http://localhost:8001/callback"
     header = {'Content-type': 'application/json'}
     data = '{"title":"Test Question from python!","content":"yay this is a content","possible_answers":["a","b","c","d"],"price":23.42,"callback":"http://foo.at/task","answers_wanted":5}'
-    req = urllib2.Request(url,data,header)
+    req = urllib2.Request(url, data, header)
     response = urllib2.urlopen(req)
     str = response.read()
-    messages.success( request, 'Sucessfully uploaded Tasks' )
+    messages.success(request, 'Sucessfully uploaded Tasks')
     return render_to_response('index.html', context_instance=RequestContext(request))
 
