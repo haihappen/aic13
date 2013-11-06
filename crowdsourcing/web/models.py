@@ -16,3 +16,5 @@ class Answer(models.Model):
     user = models.ForeignKey(User)
     answer = models.TextField()
     
+class Companyuser(models.Model):
+    user = models.ForeignKey(User,unique=True)
