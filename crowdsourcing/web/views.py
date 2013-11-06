@@ -1,9 +1,13 @@
 #User Management part of this file completly taken from: https://github.com/Horrendus/csrf_thesis/tree/master/django_forgebook
 import json
 import urllib2
+import itertools
+
 from urllib2 import HTTPError
 
 from models import Task, Answer, Companyuser
+
+from http_basic_auth import logged_in_or_basicauth
 
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
@@ -20,6 +24,7 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from JSONSerializer import JSONSerializer
 
+#Helper functions
 def get_tasks(user):
     if str(user) == "AnonymousUser":
         return Task.objects.none()
@@ -43,21 +48,41 @@ def get_notallowed_message(task,user):
     return message
 
 #API functions
-
 @csrf_exempt
+@logged_in_or_basicauth()
 def add_task(request):
+    users = request.user.companyuser_set.all()
+    if not users:
+        return HttpResponse('only company users can create tasks',status=403)
     if request.method == 'POST':
+        companyuser = users[0]
         body = json.loads(request.body,"ascii")
         possible_answers = json.dumps(body["possible_answers"])
         body["possible_answers"] = possible_answers
-        task_instance = Task.objects.create(**body)
+        task_instance = Task.objects.create(companyuser=companyuser,**body)
         return HttpResponse("{'id':%i}" % task_instance.id, content_type="application/json")
 
 @csrf_exempt
+@logged_in_or_basicauth()
 def answers(request):
+    users = request.user.companyuser_set.all()
+    if not users:
+        return HttpResponse('only company users can view answers to their tasks',status=403)
+    companyuser = users[0]
+    answersets = [t.answer_set.all() for t in companyuser.task_set.all()]
+    answers = list(itertools.chain.from_iterable(answersets))
     serializer = JSONSerializer()
-    data = serializer.serialize(Answer.objects.all())
+    data = serializer.serialize(answers)
     return HttpResponse(data, content_type="application/json")
+
+@csrf_exempt
+@logged_in_or_basicauth()
+def block_user(request, user_id):
+    users = request.user.companyuser_set.all()
+    if not users:
+        return HttpResponse('only company users can block users from answering their tasks',status=403)
+    companyuser = users[0]
+    return HttpResponse("{'status':'not implemented yet'}", content_type="application/json")
 
 #Webinterface functions
 def tasks(request):

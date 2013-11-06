@@ -16,7 +16,7 @@ urlpatterns = patterns('',
     url(r'^admin/', include(admin.site.urls)),
     
     #API related
-    url(r'api/add_task/$', 'web.views.add_task'),
+    url(r'api/tasks/$', 'web.views.add_task'),
     url(r'api/answers/$', 'web.views.answers'),
     
     
