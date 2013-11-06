@@ -1,8 +1,13 @@
 #User Management part of this file completly taken from: https://github.com/Horrendus/csrf_thesis/tree/master/django_forgebook
 import json
 import urllib2
+import itertools
 
-from models import Task, Answer
+from urllib2 import HTTPError
+
+from models import Task, Answer, Companyuser
+
+from http_basic_auth import logged_in_or_basicauth
 
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
@@ -19,43 +24,83 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from JSONSerializer import JSONSerializer
 
-#API functions
+#Helper functions
+def get_tasks(user):
+    if str(user) == "AnonymousUser":
+        return Task.objects.none()
+    if not user.companyuser_set.all():
+        answers = Answer.objects.filter(user=user)
+        unanswered_tasks = Task.objects.exclude(id__in=[a.task.id for a in answers])
+        tasks = [t for t in unanswered_tasks if t.answer_set.all().count() < t.answers_wanted]
+        return tasks
+    else:
+        return Task.objects.none()
 
+def get_notallowed_message(task,user):
+    message = ""
+    existing_answers = task.answer_set.all()
+    if len(existing_answers) >= task.answers_wanted:
+        message =  'No more answers allowed for this task, please pick another one'
+    if [a for a in existing_answers if a.user == user]:
+        message = 'Already answered this question, you can\'t answer it again'
+    if user.companyuser_set.all():
+        message = 'Company Users are not allowed to answer questions'
+    return message
+
+#API functions
 @csrf_exempt
+@logged_in_or_basicauth()
 def add_task(request):
+    users = request.user.companyuser_set.all()
+    if not users:
+        return HttpResponse('only company users can create tasks',status=403)
     if request.method == 'POST':
+        companyuser = users[0]
         body = json.loads(request.body,"ascii")
         possible_answers = json.dumps(body["possible_answers"])
         body["possible_answers"] = possible_answers
-        task_instance = Task.objects.create(**body)
+        task_instance = Task.objects.create(companyuser=companyuser,**body)
         return HttpResponse("{'id':%i}" % task_instance.id, content_type="application/json")
 
-@csrf_exempt        
+@csrf_exempt
+@logged_in_or_basicauth()
 def answers(request):
+    users = request.user.companyuser_set.all()
+    if not users:
+        return HttpResponse('only company users can view answers to their tasks',status=403)
+    companyuser = users[0]
+    answersets = [t.answer_set.all() for t in companyuser.task_set.all()]
+    answers = list(itertools.chain.from_iterable(answersets))
     serializer = JSONSerializer()
-    data = serializer.serialize(Answer.objects.all())
+    data = serializer.serialize(answers)
     return HttpResponse(data, content_type="application/json")
+
+@csrf_exempt
+@logged_in_or_basicauth()
+def block_user(request, user_id):
+    users = request.user.companyuser_set.all()
+    if not users:
+        return HttpResponse('only company users can block users from answering their tasks',status=403)
+    companyuser = users[0]
+    return HttpResponse("{'status':'not implemented yet'}", content_type="application/json")
 
 #Webinterface functions
 def tasks(request):
     if request.method == 'GET':
-        if str(request.user) == "AnonymousUser":
-            tasks = Task.objects.none()
-        else:
-            answers = Answer.objects.filter(user=request.user)
-            all_tasks = Task.objects.exclude(id__in=[a.task.id for a in answers])
-            tasks = []
-            for t in all_tasks:
-                if not Answer.objects.filter(task=t).count() >= t.answers_wanted:
-                    tasks += [t]
+        tasks = get_tasks(request.user)
         return render_to_response('web/index.html', {'all_tasks': tasks}, context_instance=RequestContext(request))
 
 @login_required
 def task_detail(request, task_id):
     if request.method == 'GET':
         task = get_object_or_404(Task, pk=task_id)
-        possible_answers = json.loads(task.possible_answers)
-        return render_to_response('web/detail.html', {'task': task, 'possible_answers': possible_answers}, context_instance=RequestContext(request))
+        if task in get_tasks(request.user):
+            possible_answers = json.loads(task.possible_answers)
+            return render_to_response('web/detail.html', {'task': task, 'possible_answers': possible_answers}, context_instance=RequestContext(request))
+        else:
+            messages.info(request, get_notallowed_message(task,request.user))
+            return HttpResponseRedirect('/')
+
 
 @login_required
 def answer_task(request, task_id):
@@ -64,17 +109,12 @@ def answer_task(request, task_id):
         answer = request.POST.get('answer','')
         try:
             task = Task.objects.get(id=task_id)
+            if not task in get_tasks(request.user):
+                messages.info(request, get_notallowed_message(task,request.user))
+                return HttpResponseRedirect('/')
+
             jsonDec = json.decoder.JSONDecoder()
             possible_answers = jsonDec.decode(task.possible_answers)
-            existing_answers = Answer.objects.filter(task=task)
-            if len(existing_answers) >= task.answers_wanted:
-                messages.info(request, 'No more answers allowed for this task, please pick another one')
-                return HttpResponseRedirect('/')
-            for existing_answer in existing_answers:
-                if existing_answer.user == request.user:
-                    print "User already answered once, not allowed to do it twice"
-                    messages.info(request, 'Already answered this question, you can\'t answer it again')
-                    return HttpResponseRedirect('/')
             correct = False
             if len(possible_answers) > 1:
                 if answer in possible_answers:
@@ -89,13 +129,17 @@ def answer_task(request, task_id):
                 answer_instance = Answer.objects.create(task=task,user=request.user,answer=answer)
                 answer_instance.save()
                 messages.success(request, "Thanks for answering a Question!")
-                if len(existing_answers)+1 == task.answers_wanted:
+                existing_answers = task.answer_set.all()
+                if len(existing_answers) == task.answers_wanted:
                     print "last answer, sending callback"
                     serializer = JSONSerializer()
                     header = {'Content-type': 'application/json'}
                     data = serializer.serialize(Answer.objects.filter(task=task))
                     req = urllib2.Request(task.callback,data,header)
-                    resp = urllib2.urlopen(req)
+                    try:
+                        resp = urllib2.urlopen(req)
+                    except HTTPError:
+                        print "callback not available"
                     print resp.read()
                 return HttpResponseRedirect('/')
             else:
@@ -111,8 +155,12 @@ def users(request):
     if request.method == 'POST':
         username = request.POST.get('username', '')
         password = request.POST.get('password', '')
+        usertype = request.POST.get('type','')
         user = User.objects.create_user(username=username, password=password)
         user.save()
+        if usertype == "company":
+            companyuser = Companyuser.objects.create(user=user)
+            companyuser.save()
         return HttpResponseRedirect("/")
 
 def new_user(request):

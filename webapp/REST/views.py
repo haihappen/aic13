@@ -72,12 +72,15 @@ def parse_yahoo(request):
 
 def upload_tasks(request):
     # upload tasks to our Crowdsourcing platform
-    url = "http://localhost:8001/callback"
+    url = "http://localhost:8000/api/tasks/"
     header = {'Content-type': 'application/json'}
-    data = '{"title":"Test Question from python!","content":"yay this is a content","possible_answers":["a","b","c","d"],"price":23.42,"callback":"http://foo.at/task","answers_wanted":5}'
+    data = '{"title":"Test Question from python!","content":"yay this is a task","possible_answers":["a","b","c","d"],"price":23.42,"callback":"http://localhost:8001/callback/","answers_wanted":5}'
     req = urllib2.Request(url, data, header)
+    base64string = base64.encodestring('%s:%s' % ("aic_c1", "aic")).replace('\n', '')
+    req.add_header("Authorization", "Basic %s" % base64string)
     response = urllib2.urlopen(req)
-    str = response.read()
+    answer = response.read()
+    print answer
     messages.success(request, 'Sucessfully uploaded Tasks')
     return render_to_response('index.html', context_instance=RequestContext(request))
 
