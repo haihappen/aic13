@@ -13,6 +13,7 @@
     	</div>
     	{% endif %}
 	{% endblock %}
+	{% if not user.companyuser_set.all %}
 	<table>
   		<tr>
     		<th>Title</th>
@@ -29,6 +30,9 @@
   		{% endfor %}
 	</table>
 	<br />
+	{% else %}
+		WebUI for Company Users coming soon
+	{% endif %}
 {% else %}
 	<p>Please <a href="/signup/">signup</a> or <a href="/login/">login</a> to see and answer Tasks.</p>
 {% endif %}
