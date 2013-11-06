@@ -61,14 +61,14 @@ class Scraper:
         self.__entry = entry
      
     def run(self):
-        print("Scrap article: %s - %s" % (self.__entry["title"], self.__link))
+        print("Scrape article: %s - %s" % (self.__entry["title"], self.__link))
         article = parse(self.__link)
         parser = AicHTMLParser()
         parser.feed(article["feed"]["summary"])
         for p in parser.get_paragraphs():
             self.__tasks.append(Paragraph.objects.create(pub_date=self.__published, yahoo_id=self.__yahoo_id, text=p))
         if not self.__tasks:
-            raise Exception("Could not scrap data from link: %s" % self.__link)
+            raise Exception("Could not scrape data from link: %s" % self.__link)
         
 def scrap_yahoo(latest):
     threads = []
@@ -89,7 +89,7 @@ def scrap_yahoo(latest):
             
     return paragraphs
 
-def create_tasks(keyword, timestamp):
+def get_paragraphs(keyword, timestamp):
     if timestamp != None:
         paragraphs = Paragraph.objects.filter(text__contains=keyword, pub_date__gt=timestamp)
     else:
