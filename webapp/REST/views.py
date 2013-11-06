@@ -10,13 +10,50 @@ from django.contrib import messages
 from django.core.exceptions import ObjectDoesNotExist
 
 from scraper import scrap_yahoo
-from scraper import create_tasks
+from scraper import get_paragraphs
 
 from JSONSerializer import JSONSerializer
 from reportlab.platypus.para import Para
 
 import urllib2
+import base64
+import time
+import json
 
+#Helper functions
+def create_tasks(company):
+    try:
+        latest_timestamp = company.task_set.latest("pub_date")
+    except ObjectDoesNotExist:
+        latest_timestamp = None
+
+    paragraphs = get_paragraphs(company.name,latest_timestamp)
+    current_timestamp = int(time.time())
+    #TODO: create tasks for paragraphs & upload them to our plattform
+
+
+def create_task_json(title,content,possible_answers,price,callback,answers_wanted):
+    answers_json = json.dumps(possible_answers)
+    task_json = '{"title":"%s","content":"%s","possible_answers":%s,"price":%d,"callback":"%s","answers_wanted":%i}' % (title,content,answers_json,price,callback,answers_wanted)
+    return task_json
+
+def upload_task(task_json):
+    #BEGIN TODO: move to settings
+    user = "aic_c1"
+    password = "aic"
+    url = "http://localhost:8000/api/tasks/"
+    #END
+    header = {'Content-type': 'application/json'}
+    data = task_json
+    req = urllib2.Request(url, data, header)
+    base64string = base64.encodestring('%s:%s' % (user, password)).replace('\n', '')
+    req.add_header("Authorization", "Basic %s" % base64string)
+    response = urllib2.urlopen(req)
+    answer_json = response.read()
+    answer = json.loads(answer_json)
+    return answer
+
+#Webapp functions
 def sentiments(request):
     if request.method == 'GET':
         serializer = JSONSerializer()
@@ -59,28 +96,15 @@ def parse_yahoo(request):
     
     count = Paragraph.objects.count()
     print("nr of paragraphs in db: %d" % count)
-    
-
-    for x in create_tasks("apple", None):
-        print("-----------")
-        print(x.text)
-        print(x.yahoo_id)    
-        print(x.pub_date)
-
 
     return render_to_response('index.html', context_instance=RequestContext(request))
 
-def upload_tasks(request):
+def upload_all_tasks(request):
     # upload tasks to our Crowdsourcing platform
-    url = "http://localhost:8000/api/tasks/"
-    header = {'Content-type': 'application/json'}
-    data = '{"title":"Test Question from python!","content":"yay this is a task","possible_answers":["a","b","c","d"],"price":23.42,"callback":"http://localhost:8001/callback/","answers_wanted":5}'
-    req = urllib2.Request(url, data, header)
-    base64string = base64.encodestring('%s:%s' % ("aic_c1", "aic")).replace('\n', '')
-    req.add_header("Authorization", "Basic %s" % base64string)
-    response = urllib2.urlopen(req)
-    answer = response.read()
-    print answer
     messages.success(request, 'Sucessfully uploaded Tasks')
     return render_to_response('index.html', context_instance=RequestContext(request))
 
+def callback(request):
+    if request.method == 'POST':
+        print request.POST
+        #TODO: save answers & calculate sentiment
