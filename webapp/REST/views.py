@@ -2,6 +2,7 @@ from models import Company
 from models import SentimentAnalysis
 from models import Paragraph
 from models import Task
+from models import Answer
 
 from django.shortcuts import render_to_response
 from django.template import RequestContext
@@ -16,6 +17,8 @@ from scraper import get_paragraphs
 from JSONSerializer import JSONSerializer
 from reportlab.platypus.para import Para
 from datetime import datetime
+
+from django.views.decorators.csrf import csrf_exempt
 
 import urllib2
 import base64
@@ -109,7 +112,12 @@ def upload_all_tasks(request):
     messages.success(request, 'Sucessfully uploaded Tasks')
     return render_to_response('index.html', context_instance=RequestContext(request))
 
+@csrf_exempt
 def callback(request):
     if request.method == 'POST':
-        print request.POST
-        #TODO: save answers & calculate sentiment
+        answers = json.loads(request.body,"ascii")
+        #[{u'answer': u'a', u'task': 1, u'user': 1}, {u'answer': u'c', u'task': 1, ...]
+        for answer in answers:
+            task = Task.objects.get(id=answer["task"])
+            Answer.objects.create(task=task,user=answer["user"],answer=answer["answer"])
+        return HttpResponse('ok')

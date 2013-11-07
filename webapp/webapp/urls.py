@@ -13,7 +13,8 @@ urlpatterns = patterns('',
     
     url(r'^parse_yahoo/$', 'REST.views.parse_yahoo'),
     url(r'^upload_tasks/$', 'REST.views.upload_all_tasks'),
-    # url(r'^webapp/', include('webapp.foo.urls')),
+
+    url(r'^callback/$', 'REST.views.callback'),
 
     # Uncomment the admin/doc line below to enable admin documentation:
     # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
