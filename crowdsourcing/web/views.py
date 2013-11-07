@@ -138,9 +138,9 @@ def answer_task(request, task_id):
                     req = urllib2.Request(task.callback,data,header)
                     try:
                         resp = urllib2.urlopen(req)
+                        print resp.read()
                     except HTTPError:
                         print "callback not available"
-                    print resp.read()
                 return HttpResponseRedirect('/')
             else:
                 messages.info(request, 'Incorrect Answer, try again')
