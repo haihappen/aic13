@@ -1,6 +1,7 @@
 from models import Company
 from models import SentimentAnalysis
 from models import Paragraph
+from models import Task
 
 from django.shortcuts import render_to_response
 from django.template import RequestContext
@@ -14,10 +15,10 @@ from scraper import get_paragraphs
 
 from JSONSerializer import JSONSerializer
 from reportlab.platypus.para import Para
+from datetime import datetime
 
 import urllib2
 import base64
-import time
 import json
 
 #Helper functions
@@ -28,8 +29,10 @@ def create_tasks(company):
         latest_timestamp = None
 
     paragraphs = get_paragraphs(company.name,latest_timestamp)
-    current_timestamp = int(time.time())
+    current_timestamp = datetime.now()
     #TODO: create tasks for paragraphs & upload them to our plattform
+    crowdsourcing_id = 0 #this will be returned by the CrowdSouricng Webapp
+    task = Task.objects.create(submitted=current_timestamp,company=company,paragraph=paragraphs[0],crowdsourcing_id=crowdsourcing_id)
 
 
 def create_task_json(title,content,possible_answers,price,callback,answers_wanted):
@@ -101,6 +104,8 @@ def parse_yahoo(request):
 
 def upload_all_tasks(request):
     # upload tasks to our Crowdsourcing platform
+    for company in Company.objects.all():
+        create_tasks(company)
     messages.success(request, 'Sucessfully uploaded Tasks')
     return render_to_response('index.html', context_instance=RequestContext(request))
 
