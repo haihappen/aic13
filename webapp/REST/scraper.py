@@ -64,11 +64,12 @@ class Scraper:
         print("Scrape article: %s - %s" % (self.__entry["title"], self.__link))
         article = parse(self.__link)
         parser = AicHTMLParser()
-        parser.feed(article["feed"]["summary"])
-        for p in parser.get_paragraphs():
-            self.__tasks.append(Paragraph.objects.create(pub_date=self.__published, yahoo_id=self.__yahoo_id, text=p))
-        if not self.__tasks:
-            raise Exception("Could not scrape data from link: %s" % self.__link)
+        if "feed" in article and "summary" in article:
+            parser.feed(article["feed"]["summary"])
+            for p in parser.get_paragraphs():
+                self.__tasks.append(Paragraph.objects.create(pub_date=self.__published, yahoo_id=self.__yahoo_id, text=p))
+                if not self.__tasks:
+                    raise Exception("Could not scrape data from link: %s" % self.__link)
         
 def scrap_yahoo(latest):
     threads = []

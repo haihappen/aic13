@@ -13,6 +13,7 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from scraper import scrap_yahoo
 from scraper import get_paragraphs
+from metric import calc_metric
 
 from JSONSerializer import JSONSerializer
 from reportlab.platypus.para import Para
@@ -120,4 +121,6 @@ def callback(request):
         for answer in answers:
             task = Task.objects.get(id=answer["task"])
             Answer.objects.create(task=task,user=answer["user"],answer=answer["answer"])
+            calc_metric(answer)
+            
         return HttpResponse('ok')
