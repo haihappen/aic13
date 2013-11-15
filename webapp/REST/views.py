@@ -34,9 +34,11 @@ def create_tasks(company):
 
     paragraphs = get_paragraphs(company.name,latest_timestamp)
     current_timestamp = datetime.now()
-    #TODO: create tasks for paragraphs & upload them to our plattform
-    crowdsourcing_id = 0 #this will be returned by the CrowdSouricng Webapp
-    task = Task.objects.create(submitted=current_timestamp,company=company,paragraph=paragraphs[0],crowdsourcing_id=crowdsourcing_id)
+    # not tested yet, just coded without running, because of an other error
+    #for p in paragraphs:
+        #json = create_task_json("Please rate the company " + company.name  + " mentioned in this text!",p,["positiv","neutral","negativ"],0,"http://localhost:8001/callback/",5)
+        #crowdsourcing_id = upload_task(json)
+        #task = Task.objects.create(submitted=current_timestamp,company=company,paragraph=p,crowdsourcing_id=crowdsourcing_id)
 
 
 def create_task_json(title,content,possible_answers,price,callback,answers_wanted):
